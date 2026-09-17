@@ -1,0 +1,685 @@
+/* ------------------------------------------------------------------ *
+ * Application shell
+ *
+ * Grid areas: topbar, sidebar, workspace, copilot, statusbar. Using grid
+ * rather than nested flexbox keeps the scroll containers honest — only the
+ * panes scroll, never the body.
+ * ------------------------------------------------------------------ */
+
+.app {
+  display: grid;
+  height: 100vh;
+  /* The two side panels are sized through variables so that collapsing one is a
+     single assignment, and the responsive breakpoints below only restate the
+     widths instead of every combination of collapsed panels. */
+  --col-sidebar: var(--sidebar-w);
+  --col-copilot: var(--copilot-w);
+  grid-template-columns: var(--col-sidebar) minmax(0, 1fr) var(--col-copilot);
+  grid-template-rows: var(--topbar-h) minmax(0, 1fr) var(--statusbar-h);
+  grid-template-areas:
+    "topbar  topbar    topbar"
+    "sidebar workspace copilot"
+    "status  status    status";
+}
+
+/* Collapsing a panel zeroes its column; the workspace keeps the space. */
+.app.is-sidebar-collapsed { --col-sidebar: 0; }
+.app.is-copilot-collapsed { --col-copilot: 0; }
+
+/* Zero width alone would leave the panel's border and tab stops behind, so it is
+   removed from the layout entirely. */
+.app.is-sidebar-collapsed .sidebar { display: none; }
+.app.is-copilot-collapsed .copilot { display: none; }
+
+
+/* ------------------------------------------------------------------ *
+ * Top bar
+ * ------------------------------------------------------------------ */
+
+.topbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  -webkit-app-region: drag;
+}
+
+.topbar button,
+.topbar input {
+  -webkit-app-region: no-drag;
+}
+
+.topbar__left,
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-right: 4px;
+  flex: none;
+}
+
+.brand__mark {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
+}
+
+.brand__name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--text);
+}
+
+/* Vertical hairline between chrome groups. Cheaper to read than a gap. */
+.topbar__divider {
+  width: 1px;
+  height: 16px;
+  background: var(--line);
+  margin: 0 4px;
+  flex: none;
+}
+
+/* Repository button: the name is primary, the path lives in the tooltip and
+ * the status bar. Showing a truncated absolute path in the title bar reads as
+ * broken rather than informative. */
+.repo-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  max-width: 340px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  color: var(--text-2);
+  transition: background 0.12s var(--ease), border-color 0.12s var(--ease);
+}
+
+.repo-button:hover {
+  background: var(--hover);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.repo-button svg { color: var(--text-3); flex: none; }
+.repo-button:hover svg { color: var(--text-2); }
+
+.repo-button__name {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-button__empty {
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+}
+
+.repo-button__key {
+  font-size: 10px;
+  color: var(--text-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xs);
+  padding: 0 4px;
+  line-height: 15px;
+  flex: none;
+}
+
+/* Branch / sync cluster */
+.sync-cluster {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.pill--branch svg { color: var(--text-3); }
+.pill--branch.is-detached { color: var(--warn); border-color: rgba(213, 160, 60, 0.34); }
+
+/* Ahead/behind are plain counters, not buttons. */
+.count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  font-family: var(--font-mono);
+  background: var(--inset);
+  border: 1px solid var(--line);
+}
+
+.count--ahead { color: var(--accent); }
+.count--behind { color: var(--warn); }
+
+/* ------------------------------------------------------------------ *
+ * Sidebar
+ * ------------------------------------------------------------------ */
+
+.sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.sidebar__section {
+  padding: 10px 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sidebar__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 22px;
+  padding: 0 8px 0 10px;
+  margin-bottom: 2px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px;
+}
+
+/* Nav row: 28px tall, 6px corners, and a 2px accent bar when active. The bar
+ * is the only decoration in the sidebar, so selection is unmistakable. */
+.nav__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: var(--row-h);
+  padding: 0 8px;
+  border-radius: var(--r);
+  color: var(--text-2);
+  font-size: var(--fs-md);
+  text-align: left;
+  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+}
+
+.nav__item svg {
+  color: var(--text-3);
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.nav__item:hover { background: var(--hover); color: var(--text); }
+.nav__item:hover svg { color: var(--text-2); }
+
+.nav__item.is-active {
+  background: var(--active);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.nav__item.is-active svg { color: var(--text); }
+
+.nav__item.is-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+}
+
+.nav__count {
+  margin-left: auto;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: var(--inset);
+  border: 1px solid var(--line);
+  color: var(--text-3);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.nav__count:empty { display: none; }
+
+.nav__item.is-active .nav__count {
+  background: var(--accent-dim);
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+/* Recent repositories: rows, with the full path only on hover. */
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 8px 8px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--row-h);
+  padding: 0 8px;
+  border-radius: var(--r);
+  color: var(--text-2);
+  text-align: left;
+  transition: background 0.12s var(--ease);
+}
+
+.recent-item:hover { background: var(--hover); color: var(--text); }
+
+.recent-item__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--line-3);
+  flex: none;
+}
+
+.recent-item.is-current .recent-item__dot { background: var(--ok); }
+
+.recent-item__name {
+  font-size: var(--fs-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-empty {
+  padding: 2px 8px 4px 21px;
+  font-size: var(--fs-sm);
+  color: var(--text-4);
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------------------------ *
+ * Workspace and views
+ * ------------------------------------------------------------------ */
+
+.workspace {
+  grid-area: workspace;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.view[hidden] { display: none; }
+
+.split {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(300px, 42%) minmax(0, 1fr);
+}
+
+/* History rows are short, so the commit list can be narrower than Changes. */
+.split--history {
+  grid-template-columns: minmax(280px, 34%) minmax(0, 1fr);
+}
+
+.split__list,
+.split__detail {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.split__list {
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.split__detail { background: var(--bg); }
+
+/* With the copilot open the workspace cannot hold two panes below ~1180px, so
+   the list stacks above the detail and the commit box keeps a usable width. */
+@media (min-width: 901px) and (max-width: 1180px) {
+  .split,
+  .split--history {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(200px, 44%) minmax(0, 1fr);
+  }
+
+  .split__list {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+/* Collapsing the copilot hands the workspace its width back, so the split returns. */
+.app.is-copilot-collapsed .split {
+  grid-template-columns: minmax(300px, 42%) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.app.is-copilot-collapsed .split--history {
+  grid-template-columns: minmax(280px, 34%) minmax(0, 1fr);
+}
+
+.app.is-copilot-collapsed .split__list {
+  border-right: 1px solid var(--line);
+  border-bottom: none;
+}
+
+/* Both panels closed: the workspace has the whole window, so the list and the
+   detail can sit side by side again. Not below 761px, where neither pane has
+   room and the stacked layout is the only readable option. */
+@media (min-width: 761px) {
+  .app.is-sidebar-collapsed.is-copilot-collapsed .split {
+    grid-template-columns: minmax(300px, 42%) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .app.is-sidebar-collapsed.is-copilot-collapsed .split--history {
+    grid-template-columns: minmax(280px, 34%) minmax(0, 1fr);
+  }
+
+  .app.is-sidebar-collapsed.is-copilot-collapsed .split__list {
+    border-right: 1px solid var(--line);
+    border-bottom: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .split,
+  .split--history {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(200px, 44%) minmax(0, 1fr);
+  }
+
+  .split__list {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+.stack {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 36px;
+  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+  background: var(--panel);
+}
+
+.pane-head__title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pane-head__title > span:first-child {
+  white-space: nowrap;
+  flex: none;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.pane-head__title .muted {
+  font-size: var(--fs-sm);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pane-head__actions { display: flex; gap: 4px; }
+
+/* ------------------------------------------------------------------ *
+ * Welcome — left-aligned, two columns.
+ *
+ * A centred hero with a big rounded glyph is the default landing layout of
+ * every generated app. This says the same thing with the information arranged
+ * the way a tool arranges it: heading and actions left, orientation right.
+ * ------------------------------------------------------------------ */
+
+.welcome {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(240px, 0.85fr);
+  gap: 48px;
+  align-content: center;
+  padding: 40px clamp(24px, 5vw, 64px);
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Grid children default to min-width:auto, which lets long content push the
+ * column wider than its track. */
+.welcome__lead { min-width: 0; }
+
+.welcome__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.welcome__title {
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  letter-spacing: -0.017em;
+  line-height: 1.25;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+
+.welcome__body {
+  font-size: var(--fs-md);
+  line-height: 1.65;
+  color: var(--text-2);
+  max-width: 46ch;
+  margin-bottom: 22px;
+}
+
+.welcome__body code {
+  background: var(--inset);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xs);
+  padding: 1px 5px;
+  font-size: var(--fs-sm);
+  color: var(--text);
+}
+
+.welcome__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.welcome__note {
+  margin-top: 20px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--text-4);
+}
+
+.welcome__aside {
+  border-left: 1px solid var(--line);
+  padding-left: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.welcome__block { display: flex; flex-direction: column; gap: 8px; }
+
+.welcome__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  counter-reset: step;
+}
+
+.welcome__step {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 9px;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.welcome__step::before {
+  counter-increment: step;
+  content: counter(step);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xs);
+  height: 16px;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+}
+
+.welcome__step strong { color: var(--text); font-weight: 600; }
+
+/* ------------------------------------------------------------------ *
+ * Status bar
+ * ------------------------------------------------------------------ */
+
+.statusbar {
+  grid-area: status;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  font-size: var(--fs-xs);
+  color: var(--text-4);
+}
+
+.statusbar__item { white-space: nowrap; }
+.statusbar__sep { width: 1px; height: 11px; background: var(--line); }
+.statusbar__spacer { flex: 1; min-width: 0; }
+
+.statusbar__item.is-busy { color: var(--warn); }
+.statusbar__item.is-ok { color: var(--ok); }
+.statusbar__item.is-error { color: var(--danger); }
+
+.statusbar__path {
+  font-family: var(--font-mono);
+  color: var(--text-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+  max-width: 42vw;
+}
+
+/* ------------------------------------------------------------------ *
+ * Narrow windows
+ * ------------------------------------------------------------------ */
+
+@media (max-width: 1180px) {
+  .app {
+    --col-sidebar: 200px;
+    --col-copilot: minmax(320px, 356px);
+  }
+  .welcome { gap: 32px; }
+}
+
+@media (max-width: 980px) {
+  .welcome { grid-template-columns: 1fr; align-content: start; padding-top: 32px; }
+  .welcome__aside { border-left: none; padding-left: 0; border-top: 1px solid var(--line); padding-top: 18px; }
+}
+
+@media (max-width: 900px) {
+  .app {
+    --col-sidebar: 0;
+    --col-copilot: 0;
+  }
+  .sidebar { display: none; }
+  .copilot { display: none; }
+  /* Both panels are gone at this width, so the toggle has nothing to toggle. */
+  .sidebar-toggle { display: none; }
+}

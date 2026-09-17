@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="grok-dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'" />
+  <title>GitSynapse</title>
+  <link rel="stylesheet" href="./css/base.css" />
+  <link rel="stylesheet" href="./css/layout.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/diff.css" />
+  <link rel="stylesheet" href="./css/chat.css" />
+</head>
+<body>
+  <div class="app" id="app">
+
+    <!-- Top bar ------------------------------------------------------- -->
+    <header class="topbar">
+      <div class="topbar__left">
+        <!-- Panel toggle. It lives in the top bar rather than inside the
+             sidebar so it stays visible while the sidebar is hidden. -->
+        <button class="btn btn--ghost btn--icon sidebar-toggle" id="btn-sidebar-toggle" type="button"
+                title="Hide the sidebar (Ctrl+\)" aria-controls="nav" aria-expanded="true">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4.5" width="18" height="15" rx="2.5"></rect>
+            <path d="M9.5 4.5v15"></path>
+          </svg>
+        </button>
+
+        <div class="brand">
+          <span class="brand__mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+              <path d="M9 6.5V17.5"></path>
+              <path d="M9 6.5h3q4 0 4 5.5"></path>
+              <path d="M9 17.5h3q4 0 4-5.5"></path>
+              <circle cx="9" cy="6.5" r="2.2" fill="currentColor"></circle>
+              <circle cx="9" cy="17.5" r="2.2" fill="currentColor"></circle>
+              <circle cx="16" cy="12" r="2.2" fill="#5b9dff" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="brand__name">GitSynapse</span>
+        </div>
+
+        <span class="topbar__divider"></span>
+
+        <button class="repo-button" id="repo-chip" type="button" title="Open a repository (Ctrl+O)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h8A1.5 1.5 0 0 1 20 10v7.5A1.5 1.5 0 0 1 18.5 19h-14A1.5 1.5 0 0 1 3 17.5Z"/>
+          </svg>
+          <span class="repo-button__name" id="repo-chip-text">No repository open</span>
+          <span class="repo-button__key">Ctrl+O</span>
+        </button>
+      </div>
+
+      <div class="topbar__right">
+        <div class="sync-cluster" id="sync-cluster" hidden>
+          <span class="pill pill--branch" id="branch-pill" title="Current branch">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="6" cy="5" r="2.2"></circle><circle cx="6" cy="19" r="2.2"></circle><circle cx="18" cy="9" r="2.2"></circle>
+              <path d="M6 7.2v9.6"></path><path d="M8.2 5.6H14a2.4 2.4 0 0 1 2.4 2.4v.6"></path>
+            </svg>
+            <span id="branch-name">—</span>
+          </span>
+          <span class="count count--ahead" id="ahead-pill" hidden title="Commits not pushed">↑<span id="ahead-count">0</span></span>
+          <span class="count count--behind" id="behind-pill" hidden title="Commits not pulled">↓<span id="behind-count">0</span></span>
+          <button class="btn btn--ghost btn--icon btn--small" id="btn-refresh" type="button" title="Refresh (R)">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>
+          </button>
+        </div>
+
+        <button class="btn btn--ghost btn--icon" id="btn-settings" type="button" title="Settings (Ctrl+,)">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.5-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4.6a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4Z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Sidebar ------------------------------------------------------- -->
+    <aside class="sidebar">
+      <nav class="nav" id="nav" aria-label="Sections">
+        <button class="nav__item is-active" data-view="changes" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"></path><path d="M4 12h10"></path><path d="M4 18h7"></path></svg>
+          <span>Changes</span>
+          <span class="nav__count" id="nav-count-changes"></span>
+        </button>
+        <button class="nav__item" data-view="history" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+          <span>History</span>
+        </button>
+        <button class="nav__item" data-view="branches" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.2"></circle><circle cx="6" cy="19" r="2.2"></circle><circle cx="18" cy="9" r="2.2"></circle><path d="M6 7.2v9.6"></path><path d="M8.2 5.6H14a2.4 2.4 0 0 1 2.4 2.4v.6"></path></svg>
+          <span>Branches</span>
+        </button>
+        <button class="nav__item" data-view="stash" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v4H3z"></path><path d="M5 11h14v8H5z"></path><path d="M10 15h4"></path></svg>
+          <span>Stashes</span>
+        </button>
+        <button class="nav__item" data-view="tags" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.6 3H20a1 1 0 0 1 1 1v7.4a2 2 0 0 1-.6 1.4l-7.6 7.6a2 2 0 0 1-2.8 0l-5.4-5.4a2 2 0 0 1 0-2.8l7.6-7.6a2 2 0 0 1 1.4-.6Z"></path><circle cx="16.5" cy="7.5" r="1.3"></circle></svg>
+          <span>Tags</span>
+        </button>
+      </nav>
+
+      <div class="sidebar__head">
+        <span class="label">Repositories</span>
+        <button class="btn btn--ghost btn--icon btn--small" id="btn-open-repo" type="button" title="Open another repository (Ctrl+O)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        </button>
+      </div>
+      <div class="recent-list" id="recent-list"></div>
+    </aside>
+
+    <!-- Workspace ----------------------------------------------------- -->
+    <main class="workspace" id="workspace">
+
+      <section class="view" id="view-welcome" data-view="welcome">
+        <div class="welcome">
+          <div class="welcome__lead">
+            <div class="welcome__eyebrow">
+              <span class="brand__mark" aria-hidden="true" style="width:18px;height:18px">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                  <path d="M9 6.5V17.5"></path><path d="M9 6.5h3q4 0 4 5.5"></path><path d="M9 17.5h3q4 0 4-5.5"></path>
+                  <circle cx="9" cy="6.5" r="2.2" fill="currentColor"></circle>
+                  <circle cx="9" cy="17.5" r="2.2" fill="currentColor"></circle>
+                  <circle cx="16" cy="12" r="2.2" fill="#5b9dff" stroke="none"></circle>
+                </svg>
+              </span>
+              Local-first Git client
+            </div>
+            <h1 class="welcome__title">Open a repository</h1>
+            <p class="welcome__body">
+              GitSynapse drives the <code>git</code> already installed on this machine. Nothing is
+              copied into a separate index, and no command runs until you confirm it.
+            </p>
+            <div class="welcome__actions">
+              <button class="btn btn--primary btn--large" id="welcome-open" type="button">Choose folder…</button>
+              <button class="btn" id="welcome-init" type="button">Initialise a new repository</button>
+              <button class="btn" id="welcome-clone" type="button">Clone from a URL…</button>
+            </div>
+            <div class="welcome__note" id="welcome-git-status"></div>
+          </div>
+
+          <div class="welcome__aside">
+            <div class="welcome__block">
+              <span class="label">How it works</span>
+              <div class="welcome__steps">
+                <div class="welcome__step"><span><strong>Point it at a folder.</strong> GitSynapse finds the repository root itself, including worktrees.</span></div>
+                <div class="welcome__step"><span><strong>Read, stage, commit.</strong> Every write shows you the exact command it will run.</span></div>
+                <div class="welcome__step"><span><strong>Ask the copilot</strong> when you cannot remember the command. Add a provider key in Settings — Mesh, OpenRouter, OpenAI, Anthropic or Groq.</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-changes" data-view="changes" hidden>
+        <div class="split">
+          <div class="split__list">
+            <div class="pane-head">
+              <div class="pane-head__title">
+                <span>Working tree</span>
+                <span class="muted" id="changes-summary"></span>
+              </div>
+              <div class="pane-head__actions">
+                <button class="btn btn--small" id="btn-stage-all" type="button" title="Stage every change">Stage all</button>
+                <button class="btn btn--small" id="btn-unstage-all" type="button" title="Unstage everything">Unstage all</button>
+              </div>
+            </div>
+            <div class="file-groups" id="file-groups"></div>
+          </div>
+
+          <div class="split__detail">
+            <div class="commit-box" id="commit-box">
+              <div class="commit-box__head">
+                <span class="commit-box__title">Commit</span>
+                <button class="btn btn--ghost btn--small" id="btn-draft-message" type="button" title="Ask the copilot to draft a message">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M4.2 7.5l2.6 1.5M17.2 15l2.6 1.5M4.2 16.5l2.6-1.5M17.2 9l2.6-1.5"></path><circle cx="12" cy="12" r="3.2"></circle></svg>
+                  Draft with AI
+                </button>
+              </div>
+              <input class="commit-box__subject" id="commit-subject" type="text" placeholder="Summary of your changes" autocomplete="off" spellcheck="false" />
+              <textarea class="commit-box__body" id="commit-body" rows="3" placeholder="Describe the change (optional)"></textarea>
+              <div class="commit-box__foot">
+                <label class="check">
+                  <input type="checkbox" id="commit-amend" />
+                  <span>Amend last commit</span>
+                </label>
+                <div class="commit-box__right">
+                  <span class="muted" id="staged-count">0 staged</span>
+                  <button class="btn btn--primary" id="btn-commit" type="button" disabled>Commit</button>
+                </div>
+              </div>
+            </div>
+            <div class="diff-pane" id="diff-pane">
+              <div class="empty">
+                <div class="empty__title">No file selected</div>
+                <div class="empty__body">Pick a file on the left to see its diff.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-history" data-view="history" hidden>
+        <div class="split split--history">
+          <div class="split__list">
+            <div class="pane-head">
+              <div class="pane-head__title"><span>Commits</span><span class="muted" id="history-count"></span></div>
+              <div class="pane-head__actions">
+                <button class="btn btn--small" id="btn-load-more" type="button">Load more</button>
+              </div>
+            </div>
+            <div class="graph" id="graph"></div>
+          </div>
+          <div class="split__detail">
+            <div class="diff-pane" id="commit-detail">
+              <div class="empty">
+                <div class="empty__title">No commit selected</div>
+                <div class="empty__body">Select a commit to inspect the change, or ask the copilot to explain it.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-branches" data-view="branches" hidden>
+        <div class="stack" id="branches-view"></div>
+      </section>
+
+      <section class="view" id="view-stash" data-view="stash" hidden>
+        <div class="stack" id="stash-view"></div>
+      </section>
+
+      <section class="view" id="view-tags" data-view="tags" hidden>
+        <div class="stack" id="tags-view"></div>
+      </section>
+    </main>
+
+    <!-- Copilot ------------------------------------------------------- -->
+    <aside class="copilot" id="copilot">
+      <header class="copilot__head">
+        <div class="copilot__title">
+          <span class="spark" aria-hidden="true"></span>
+          Copilot
+        </div>
+        <div class="copilot__tools">
+          <span class="model-pill" id="model-pill" title="Model used by the copilot">—</span>
+          <button class="btn btn--ghost btn--icon" id="btn-new-chat" type="button" title="New conversation">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+          </button>
+          <button class="btn btn--ghost btn--icon" id="btn-collapse-chat" type="button" title="Hide copilot (Ctrl+B)">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M15 5l-7 7 7 7"></path></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="chat" id="chat-log" aria-live="polite"></div>
+
+      <div class="composer" id="composer">
+        <div class="composer__box">
+          <textarea id="chat-input" rows="1" placeholder="Describe what you want to do…" spellcheck="false"></textarea>
+          <div class="composer__bar">
+            <span class="composer__hint" id="composer-hint">Enter to send · Shift+Enter for a new line</span>
+            <button class="btn btn--send" id="btn-send" type="button" title="Send">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"></path><path d="M12.5 5.5 19 12l-6.5 6.5"></path></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Status bar ---------------------------------------------------- -->
+    <footer class="statusbar">
+      <span class="statusbar__item" id="status-git">git —</span>
+      <span class="statusbar__sep"></span>
+      <span class="statusbar__item" id="status-policy">confirm: all</span>
+      <span class="statusbar__spacer"></span>
+      <span class="statusbar__item" id="status-message"></span>
+      <span class="statusbar__sep"></span>
+      <span class="statusbar__item statusbar__path" id="status-duration"></span>
+    </footer>
+  </div>
+
+  <div class="modal-root" id="modal-root" hidden></div>
+  <div class="toast-root" id="toast-root"></div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

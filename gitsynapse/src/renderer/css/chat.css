@@ -1,0 +1,448 @@
+/* ------------------------------------------------------------------ *
+ * Copilot panel
+ *
+ * Layout follows the shape people already know from chat assistants: a
+ * scrolling transcript with the newest turn pinned to the bottom, and a
+ * composer anchored underneath. Assistant output is unboxed so long answers
+ * stay readable; only the user's own turns get a bubble.
+ * ------------------------------------------------------------------ */
+
+.copilot {
+  grid-area: copilot;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.copilot__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 36px;
+  padding: 0 6px 0 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  flex: none;
+}
+
+.copilot__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* A single accent dot, not a gradient blob. */
+.spark {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+  flex: none;
+}
+
+.copilot__tools { display: flex; align-items: center; gap: 6px; }
+
+/* Model name is metadata, not a control: quiet mono, no border, no pill. */
+.model-pill {
+  max-width: 190px;
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+  background: var(--inset);
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------------ *
+ * Transcript
+ * ------------------------------------------------------------------ */
+
+.chat {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 14px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.msg { display: flex; flex-direction: column; gap: 8px; }
+
+.msg--user { align-items: flex-end; }
+
+/* The user's own turn is the only thing in a bubble; assistant output stays
+ * unboxed so long answers read as prose rather than as messages. */
+.msg--user .msg__bubble {
+  max-width: 88%;
+  padding: 8px 11px;
+  border-radius: var(--r-lg);
+  border-bottom-right-radius: var(--r-xs);
+  background: var(--active);
+  color: var(--text);
+  font-size: var(--fs-md);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.msg--assistant .msg__body {
+  font-size: var(--fs-md);
+  line-height: 1.65;
+  color: var(--text-2);
+  word-break: break-word;
+}
+
+.msg__body p { margin: 0 0 8px; }
+.msg__body p:last-child { margin-bottom: 0; }
+.msg__body ul, .msg__body ol { margin: 6px 0; padding-left: 18px; }
+.msg__body li { margin-bottom: 3px; }
+.msg__body strong { color: var(--text); font-weight: 600; }
+.msg__body h3 { font-size: 13px; margin: 10px 0 6px; color: var(--text); }
+
+.msg__body code {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11.5px;
+  color: var(--text);
+}
+
+.msg__body pre {
+  margin: 8px 0;
+  padding: 10px;
+  background: var(--inset);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow-x: auto;
+}
+
+.msg__body pre code { background: none; border: none; padding: 0; }
+
+.msg__note {
+  font-size: 11.5px;
+  color: var(--text-4);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.msg__note--error { color: var(--del-fg); }
+.msg__note--warn { color: var(--warn); }
+
+.msg__actions { display: flex; gap: 6px; }
+
+/* Streaming caret */
+.caret {
+  display: inline-block;
+  width: 5px;
+  height: 13px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--accent);
+  animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ------------------------------------------------------------------ *
+ * Plan card
+ * ------------------------------------------------------------------ */
+
+.plan {
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  background: var(--panel-2);
+  overflow: hidden;
+}
+
+.plan__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--line);
+  background: var(--inset);
+}
+
+/* The plan is the one thing in the panel that changes your repository, so it
+ * gets the accent rule and nothing else does. */
+.plan__label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  flex: none;
+}
+
+.plan__summary {
+  font-size: 12.5px;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan__steps { display: flex; flex-direction: column; }
+
+.step {
+  padding: 10px 11px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.step:last-child { border-bottom: none; }
+.step.is-running { background: rgba(91, 157, 255, 0.06); }
+.step.is-done { background: rgba(72, 176, 107, 0.05); }
+.step.is-failed { background: rgba(229, 103, 95, 0.06); }
+.step.is-blocked { opacity: 0.7; }
+
+.step__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step__index {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  font-size: 10.5px;
+  color: var(--text-3);
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.step__risk { margin-left: auto; flex: none; }
+
+.step__cmd {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--inset);
+  color: var(--text);
+  /* Long commit messages must stay readable; wrap rather than clip. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.step__why {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.55;
+}
+
+.step__reason {
+  font-size: 11.5px;
+  color: var(--del-fg);
+  line-height: 1.5;
+}
+
+.step__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step__output {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  max-height: 190px;
+  overflow: auto;
+  padding: 8px 9px;
+  border-radius: var(--r-sm);
+  background: var(--inset);
+  border: 1px solid var(--line);
+  color: var(--text-3);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.plan__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  background: var(--inset);
+}
+
+.plan__foot .spacer { flex: 1; }
+
+.plan--blocked .plan__head { background: rgba(229, 103, 95, 0.08); }
+
+/* ------------------------------------------------------------------ *
+ * Composer
+ * ------------------------------------------------------------------ */
+
+.composer {
+  flex: none;
+  padding: 9px 12px 11px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.composer__box {
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  background: var(--inset);
+  padding: 7px 7px 5px 9px;
+  transition: border-color 0.14s var(--ease), box-shadow 0.14s var(--ease);
+}
+
+.composer__box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.composer__box textarea {
+  width: 100%;
+  border: none;
+  background: none;
+  resize: none;
+  outline: none;
+  font-size: 13px;
+  line-height: 1.55;
+  max-height: 180px;
+  min-height: 22px;
+  padding: 2px 0;
+  color: var(--text);
+}
+
+.composer__box textarea::placeholder { color: var(--text-4); }
+
+.composer__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.composer__hint {
+  font-size: 10.5px;
+  color: var(--text-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn--send {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #08111f;
+}
+
+.btn--send:hover:not(:disabled) { background: var(--accent-hi); border-color: var(--accent-hi); color: #08111f; }
+.btn--send:disabled {
+  background: var(--panel-2);
+  border-color: var(--line);
+  color: var(--text-4);
+}
+
+/* ------------------------------------------------------------------ *
+ * Copilot empty state
+ * ------------------------------------------------------------------ */
+
+.chat-empty {
+  margin: auto 0;
+  padding: 4px 2px 16px;
+  text-align: left;
+  color: var(--text-3);
+}
+
+.chat-empty__title {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 5px;
+}
+
+.chat-empty__body {
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  margin-bottom: 16px;
+  color: var(--text-3);
+}
+
+/* Plain text rows with a hover state — no borders, no pills. */
+.chat-empty__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--r);
+  text-align: left;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--text-2);
+  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+}
+
+.suggestion:hover { background: var(--hover); color: var(--text); }
+
+.suggestion__arrow {
+  color: var(--text-4);
+  flex: none;
+  font-family: var(--font-mono);
+  line-height: 1.5;
+}
+
+.suggestion:hover .suggestion__arrow { color: var(--accent); }
+
+/* ------------------------------------------------------------------ *
+ * Floating launcher shown when the copilot is hidden
+ * ------------------------------------------------------------------ */
+
+.copilot-launcher {
+  position: fixed;
+  right: 14px;
+  bottom: calc(var(--statusbar-h) + 12px);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--r);
+  border: 1px solid var(--line-2);
+  background: var(--panel-2);
+  color: var(--text-2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+
+.copilot-launcher:hover { background: var(--hover); color: var(--text); }

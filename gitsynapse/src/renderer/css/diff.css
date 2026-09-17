@@ -1,0 +1,466 @@
+/* ------------------------------------------------------------------ *
+ * Working tree: file lists, commit box, diff, history graph
+ * ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ *
+ * File lists
+ * ------------------------------------------------------------------ */
+
+.file-groups {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Trailing row that accounts for the untracked files GitSynapse filters out. */
+.noise-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px 7px 12px;
+  border-top: 1px solid var(--line);
+  color: var(--text-4);
+  font-size: var(--fs-xs);
+}
+
+.noise-row__text {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noise-row__count {
+  color: var(--text-4);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  flex: none;
+}
+
+/* Group header: a hairline rule with a label, sticky while the group scrolls. */
+.file-group__head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 10px 0 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+
+.file-group__head .count {
+  height: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-4);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.file-group__head .grow { flex: 1; }
+.file-group__head .btn { margin-right: -4px; }
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 26px;
+  padding: 0 10px 0 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-2);
+  transition: background 0.1s var(--ease);
+}
+
+.file-row:hover { background: var(--hover); }
+
+.file-row.is-selected {
+  background: var(--accent-dim);
+  color: var(--text);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Status code: one monospace character, coloured by meaning. */
+.file-row__code {
+  width: 14px;
+  flex: none;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.file-row__code[data-state="M"] { color: var(--warn); }
+.file-row__code[data-state="A"] { color: var(--add-fg); }
+.file-row__code[data-state="D"] { color: var(--del-fg); }
+.file-row__code[data-state="R"] { color: var(--accent); }
+.file-row__code[data-state="?"] { color: var(--text-4); }
+.file-row__code[data-state="U"] { color: var(--del-fg); }
+
+/* The directory is dimmed and the filename is bright, so long paths stay
+ * scannable. RTL truncation keeps the filename visible when the path is cut. */
+.file-row__path {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+}
+
+.file-row__dir { color: var(--text-4); }
+
+.file-row__stat {
+  display: flex;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-4);
+  flex: none;
+}
+
+.file-row__stat .add { color: var(--add-fg); }
+.file-row__stat .del { color: var(--del-fg); }
+
+.file-row__actions {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+
+/* Actions stay visible on the selected row and on hover, so the affordance is
+ * discoverable without turning the list into a wall of icons. */
+.file-row__actions { opacity: 0; transition: opacity 0.1s var(--ease); }
+.file-row:hover .file-row__actions,
+.file-row.is-selected .file-row__actions,
+.file-row:focus-within .file-row__actions { opacity: 1; }
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  transition: background 0.1s var(--ease), color 0.1s var(--ease);
+}
+
+.icon-btn:hover { background: var(--active); color: var(--text); }
+.icon-btn--danger:hover { background: rgba(224, 101, 93, 0.16); color: var(--del-fg); }
+.icon-btn:disabled { opacity: 0.35; cursor: default; }
+
+/* ------------------------------------------------------------------ *
+ * Commit box
+ * ------------------------------------------------------------------ */
+
+.commit-box {
+  flex: none;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.commit-box__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.commit-box__title {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+
+.commit-box__subject,
+.commit-box__body {
+  width: 100%;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--inset);
+  color: var(--text);
+  padding: 7px 9px;
+  font-size: var(--fs-md);
+  transition: border-color 0.12s var(--ease), box-shadow 0.12s var(--ease);
+}
+
+.commit-box__body {
+  resize: vertical;
+  min-height: 52px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+}
+
+.commit-box__subject:focus,
+.commit-box__body:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.commit-box__subject::placeholder,
+.commit-box__body::placeholder { color: var(--text-4); }
+
+.commit-box__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 1px;
+}
+
+.commit-box__foot .check { white-space: nowrap; }
+
+.commit-box__right {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.commit-box__count {
+  font-size: var(--fs-sm);
+  color: var(--text-4);
+  font-family: var(--font-mono);
+}
+
+/* ------------------------------------------------------------------ *
+ * Diff
+ * ------------------------------------------------------------------ */
+
+.diff-pane {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  flex: none;
+}
+
+.diff-head__file {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+}
+
+.diff-head__actions { display: flex; gap: 4px; margin-left: auto; flex: none; }
+
+.diff-body {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  padding-bottom: 20px;
+  min-width: fit-content;
+  width: 100%;
+}
+
+/* Three columns: old line number, new line number, content. */
+.dl {
+  display: grid;
+  grid-template-columns: 42px 42px 1fr;
+  white-space: pre;
+  tab-size: 4;
+}
+
+.dl__no {
+  padding: 0 7px;
+  text-align: right;
+  color: var(--text-4);
+  user-select: none;
+  font-size: 10.5px;
+  line-height: 16px;
+  background: var(--inset);
+  border-right: 1px solid var(--line);
+}
+
+.dl__text { padding: 0 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
+
+.dl--add { background: var(--add-bg); }
+.dl--add .dl__text { color: var(--add-fg); }
+.dl--del { background: var(--del-bg); }
+.dl--del .dl__text { color: var(--del-fg); }
+.dl--meta .dl__text { color: var(--text-4); }
+.dl--hunk { background: var(--accent-dim); }
+.dl--hunk .dl__text { color: var(--accent); }
+.dl--hunk .dl__no { background: transparent; border-right-color: transparent; }
+.dl--context .dl__text { color: var(--text-2); }
+
+/* ------------------------------------------------------------------ *
+ * History graph
+ * ------------------------------------------------------------------ */
+
+.graph {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.graph-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 10px 5px 4px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  transition: background 0.1s var(--ease);
+}
+
+.graph-row:hover { background: var(--hover); }
+
+.graph-row.is-selected {
+  background: var(--accent-dim);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.graph-row__lane { position: relative; height: 26px; }
+
+.graph-row__node {
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -3.5px;
+  border-radius: 50%;
+  border: 1.5px solid var(--panel);
+}
+
+.graph-row__line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  opacity: 0.55;
+}
+
+.graph-row__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.graph-row__subject-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.graph-row__subject {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.graph-row__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-xs);
+  color: var(--text-4);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.graph-row__meta > * { flex: none; }
+.graph-row__meta code { color: var(--text-3); }
+
+/* ------------------------------------------------------------------ *
+ * Commit detail
+ * ------------------------------------------------------------------ */
+
+.commit-detail__head {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.commit-detail__subject {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.commit-detail__body {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  white-space: pre-wrap;
+  line-height: 1.6;
+  border-left: 2px solid var(--line-2);
+  padding-left: 10px;
+}
+
+.commit-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: var(--fs-sm);
+  color: var(--text-4);
+  align-items: center;
+}
+
+.commit-detail__meta code {
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+}
+
+.commit-detail__actions { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.commit-files {
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  max-height: 190px;
+  overflow-y: auto;
+}

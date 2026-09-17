@@ -1,0 +1,15 @@
+{
+  "apiKeyEnc": null,
+  "baseUrl": "https://api.meshapi.ai/v1",
+  "model": "openai/gpt-4o-mini",
+  "modelsCache": [],
+  "confirmPolicy": "all",
+  "autoRunReadOnly": true,
+  "theme": "grok-dark",
+  "recentRepos": [
+    "/home/user/demo-sandbox"
+  ],
+  "lastRepo": "/home/user/demo-sandbox",
+  "showRawOutput": true,
+  "aiEnabled": true
+}
