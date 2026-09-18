@@ -1,0 +1,168 @@
+{
+  "name": "gitsynapse",
+  "productName": "GitSynapse",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "scripts": {
+    "start": "node src/server/index.js",
+    "dev": "node --watch src/server/index.js",
+    "test": "npm run test:api && npm run test:paths && npm run test:ui && npm run test:init && npm run test:identity",
+    "test:api": "node scripts/smoke-test.js",
+    "test:paths": "node scripts/paths-test.js",
+    "test:identity": "node scripts/identity-test.js",
+    "test:init": "node scripts/init-test.js",
+    "test:ui": "node scripts/ui-test.js",
+    "shots": "node scripts/screenshots.js",
+    "app": "electron .",
+    "build:icons": "node scripts/build-icon.js && node scripts/build-ico.js",
+    "brand:exe": "node scripts/brand-exe.cjs",
+    "dist:win": "node scripts/build-windows.js",
+    "tour": "node scripts/tour.js",
+    "verify:release": "node scripts/verify-release.js",
+    "dist:linux": "node scripts/build-linux.js",
+    "dist:mac": "node scripts/build-mac.js",
+    "dist:all": "node scripts/build-windows.js && node scripts/build-linux.js && node scripts/build-mac.js",
+    "release": "node scripts/make-release.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@electron/asar": "^3.4.1",
+    "@resvg/resvg-js": "^2.6.2",
+    "electron": "^31.3.1",
+    "electron-builder": "^24.13.3",
+    "puppeteer": "^23.0.0",
+    "resedit": "^2.0.3"
+  },
+  "build": {
+    "appId": "ai.gitsynapse.app",
+    "productName": "GitSynapse",
+    "copyright": "GitSynapse",
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "package.json",
+      "!**/*.map",
+      "!screenshots/**",
+      "!scripts/**"
+    ],
+    "extraMetadata": {
+      "main": "electron/main.cjs"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "artifactName": "GitSynapse-setup.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "GitSynapse",
+      "artifactName": "GitSynapse-setup.${ext}"
+    },
+    "electronLanguages": [
+      "en-US"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.developer-tools",
+      "icon": "assets/icon.png",
+      "darkModeSupport": true,
+      "minimumSystemVersion": "10.15",
+      "gatekeeperAssess": false,
+      "artifactName": "GitSynapse-${version}-macOS-${arch}.${ext}",
+      "notarize": false
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "tar.gz",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Development",
+      "icon": "assets/icon.png",
+      "executableName": "gitsynapse",
+      "artifactName": "GitSynapse-${version}-Linux-${arch}.${ext}",
+      "maintainer": "GitSynapse",
+      "synopsis": "Git client with an AI copilot",
+      "description": "A desktop Git client for people who are new to Git, with an AI copilot that turns plain-language intent into commands you approve before they run.",
+      "desktop": {
+        "Name": "GitSynapse",
+        "Comment": "Git client with an AI copilot",
+        "Categories": "Development;RevisionControl;",
+        "Keywords": "git;version control;ai;copilot;"
+      }
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libsecret-1-0"
+      ],
+      "maintainer": "GitSynapse <maintainer@example.com>"
+    },
+    "appImage": {
+      "category": "Development"
+    }
+  },
+  "description": "A desktop GUI for Git with an AI copilot. Works with Mesh, OpenRouter, OpenAI, Anthropic and Groq.",
+  "author": {
+    "name": "GitSynapse",
+    "email": "maintainer@example.com"
+  },
+  "homepage": "https://github.com/gitsynapse/gitsynapse",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gitsynapse/gitsynapse.git"
+  },
+  "license": "MIT"
+}

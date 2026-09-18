@@ -1,0 +1,18 @@
+# Normalise line endings in the repository, so a clone behaves the same on
+# Windows, macOS and Linux.
+* text=auto
+
+# Shell scripts must keep LF: a CRLF checkout makes chrome-libs.sh unrunnable.
+*.sh text eol=lf
+*.nsi text eol=crlf
+*.cjs text eol=lf
+
+# Binary assets: never touched by the text filter.
+*.ico binary
+*.icns binary
+*.png binary
+*.jpg binary
+*.woff2 binary
+
+# Keep diffs readable in review.
+package-lock.json -diff linguist-generated
